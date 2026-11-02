@@ -1,0 +1,585 @@
+openapi: 3.0.3
+info:
+  title: ERP Manager Core API
+  version: 0.0.1
+  description: |
+    API de cadastro de produtos e clientes do ERP Manager.
+
+    O contrato descrito neste arquivo é a fonte da documentação. Os controllers não usam anotações OpenAPI.
+
+    A listagem usa página iniciada em zero. `size` vai de 1 a 100 e o padrão é 20.
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+tags:
+  - name: Products
+    description: Cadastro de produtos
+  - name: Customers
+    description: Cadastro de clientes
+
+paths:
+  /api/v1/products:
+    post:
+      tags: [Products]
+      operationId: createProduct
+      summary: Cria um produto
+      description: |
+        Cadastra um produto ativo por padrão.
+
+        O nome é gravado sem espaços nas pontas. O SKU é gravado em maiúsculas e precisa ser único.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+            example:
+              name: Notebook
+              sku: nb-01
+              price: 3500.50
+      responses:
+        '201':
+          description: Produto criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: Lista produtos
+      description: Retorna os produtos da página pedida, do mais recente para o mais antigo.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de produtos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/products/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Busca um produto
+      description: Retorna o produto pelo identificador.
+      responses:
+        '200':
+          description: Produto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Products]
+      operationId: updateProduct
+      summary: Atualiza um produto
+      description: |
+        Substitui nome, SKU, preço e situação do produto. A data de criação permanece a mesma.
+
+        O SKU continua único. Informar o SKU atual do próprio produto não gera conflito.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+            example:
+              name: Notebook Pro
+              sku: NB-01
+              price: 4000
+              active: false
+      responses:
+        '200':
+          description: Produto atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Products]
+      operationId: deleteProduct
+      summary: Remove um produto
+      description: Exclui o produto. A resposta não tem corpo.
+      responses:
+        '204':
+          description: Produto removido
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/customers:
+    post:
+      tags: [Customers]
+      operationId: createCustomer
+      summary: Cria um cliente
+      description: |
+        Cadastra um cliente ativo por padrão.
+
+        O nome é gravado sem espaços nas pontas. O e-mail é gravado em minúsculas. Notas em branco são gravadas como ausentes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+            example:
+              name: Maria Silva
+              phone: "(11) 98888-7766"
+              email: Maria@Example.com
+              optionalNotes: Prefere contato à tarde
+      responses:
+        '201':
+          description: Cliente criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Customers]
+      operationId: listCustomers
+      summary: Lista clientes
+      description: Retorna os clientes da página pedida, do mais recente para o mais antigo.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de clientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/customers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CustomerId'
+    get:
+      tags: [Customers]
+      operationId: getCustomer
+      summary: Busca um cliente
+      description: Retorna o cliente pelo identificador.
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/CustomerNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Customers]
+      operationId: updateCustomer
+      summary: Atualiza um cliente
+      description: Substitui nome, contato e situação do cliente. A data de criação permanece a mesma.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+            example:
+              name: Maria Souza
+              phone: "1133334444"
+              email: maria.souza@example.com
+              optionalNotes: Ligar após as 18h
+              active: false
+      responses:
+        '200':
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/CustomerNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Customers]
+      operationId: deleteCustomer
+      summary: Remove um cliente
+      description: Exclui o cliente. A resposta não tem corpo.
+      responses:
+        '204':
+          description: Cliente removido
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/CustomerNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Número da página, começando em zero.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Quantidade de itens na página. O mínimo é 1 e o máximo é 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    ProductId:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID do produto.
+      schema:
+        type: string
+        format: uuid
+    CustomerId:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID do cliente.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Dados inválidos, identificador malformado ou página fora do intervalo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 400
+            error: Bad Request
+            message: Price cannot be negative
+            path: /api/v1/products
+    Conflict:
+      description: Já existe outro produto com o mesmo SKU.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 409
+            error: Conflict
+            message: 'SKU already exists: NB-01'
+            path: /api/v1/products
+    ProductNotFound:
+      description: Produto não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 404
+            error: Not Found
+            message: Product with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found
+            path: /api/v1/products/3fa85f64-5717-4562-b3fc-2c963f66afa6
+    CustomerNotFound:
+      description: Cliente não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 404
+            error: Not Found
+            message: Customer with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found
+            path: /api/v1/customers/3fa85f64-5717-4562-b3fc-2c963f66afa6
+    InternalError:
+      description: Falha inesperada ao processar a requisição.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 500
+            error: Internal Server Error
+            message: An unexpected error occurred
+            path: /api/v1/products
+
+  schemas:
+    CreateProductRequest:
+      type: object
+      required: [name, sku, price]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Nome do produto. Espaços nas pontas são removidos.
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Código único do produto. É armazenado em maiúsculas.
+        price:
+          type: number
+          format: double
+          minimum: 0
+          description: Preço. Não pode ser negativo.
+        active:
+          type: boolean
+          default: true
+          description: Indica se o produto está ativo. Quando omitido, o produto nasce ativo.
+    UpdateProductRequest:
+      type: object
+      required: [name, sku, price, active]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Novo nome do produto.
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Novo SKU, armazenado em maiúsculas.
+        price:
+          type: number
+          format: double
+          minimum: 0
+          description: Novo preço.
+        active:
+          type: boolean
+          description: Situação do produto depois da atualização.
+    ProductResponse:
+      type: object
+      required: [id, name, sku, active, price, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador do produto.
+        name:
+          type: string
+          description: Nome normalizado.
+        sku:
+          type: string
+          description: SKU em maiúsculas.
+        active:
+          type: boolean
+          description: Situação atual do produto.
+        price:
+          type: number
+          format: double
+          description: Preço atual.
+        createdAt:
+          type: string
+          format: date-time
+          description: Instante de criação, em UTC.
+    ProductPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+        page:
+          type: integer
+          description: Página retornada.
+        size:
+          type: integer
+          description: Tamanho pedido da página.
+        totalElements:
+          type: integer
+          format: int64
+          description: Total de produtos cadastrados.
+        totalPages:
+          type: integer
+          description: Total de páginas.
+        first:
+          type: boolean
+          description: Indica se esta é a primeira página.
+        last:
+          type: boolean
+          description: Indica se esta é a última página.
+    CreateCustomerRequest:
+      type: object
+      required: [name, phone, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Nome do cliente. Espaços nas pontas são removidos.
+        phone:
+          type: string
+          description: Telefone com 8 a 15 dígitos. A formatação pode ser enviada junto.
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: E-mail válido. É armazenado em minúsculas.
+        optionalNotes:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: Observação livre. Texto em branco é tratado como ausente.
+        active:
+          type: boolean
+          default: true
+          description: Indica se o cliente está ativo. Quando omitido, o cliente nasce ativo.
+    UpdateCustomerRequest:
+      type: object
+      required: [name, phone, email, active]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Novo nome do cliente.
+        phone:
+          type: string
+          description: Novo telefone, com 8 a 15 dígitos.
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Novo e-mail.
+        optionalNotes:
+          type: string
+          nullable: true
+          maxLength: 1000
+          description: Nova observação. Omitir ou enviar vazio remove a nota.
+        active:
+          type: boolean
+          description: Situação do cliente depois da atualização.
+    CustomerResponse:
+      type: object
+      required: [id, name, phone, email, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador do cliente.
+        name:
+          type: string
+          description: Nome normalizado.
+        phone:
+          type: string
+          description: Telefone armazenado.
+        email:
+          type: string
+          format: email
+          description: E-mail em minúsculas.
+        optionalNotes:
+          type: string
+          nullable: true
+          description: Observação, quando existir.
+        active:
+          type: boolean
+          description: Situação atual do cliente.
+        createdAt:
+          type: string
+          format: date-time
+          description: Instante de criação, em UTC.
+    CustomerPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerResponse'
+        page:
+          type: integer
+          description: Página retornada.
+        size:
+          type: integer
+          description: Tamanho pedido da página.
+        totalElements:
+          type: integer
+          format: int64
+          description: Total de clientes cadastrados.
+        totalPages:
+          type: integer
+          description: Total de páginas.
+        first:
+          type: boolean
+          description: Indica se esta é a primeira página.
+        last:
+          type: boolean
+          description: Indica se esta é a última página.
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message, path]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Instante do erro, em UTC.
+        status:
+          type: integer
+          description: Código HTTP.
+        error:
+          type: string
+          description: Nome do status HTTP.
+        message:
+          type: string
+          description: Motivo do erro.
+        path:
+          type: string
+          description: Caminho da requisição.
