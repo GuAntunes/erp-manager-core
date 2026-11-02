@@ -17,6 +17,8 @@ tags:
     description: Cadastro de produtos
   - name: Customers
     description: Cadastro de clientes
+  - name: Sales
+    description: Vendas por rascunho, linhas, desconto, confirmação e cancelamento
 
 paths:
   /api/v1/products:
@@ -258,6 +260,236 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/v1/sales:
+    post:
+      tags: [Sales]
+      operationId: createSale
+      summary: Abre um rascunho de venda
+      description: Cria uma venda em rascunho para um cliente existente e ativo. O corpo informa só o cliente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSaleRequest'
+      responses:
+        '201':
+          description: Rascunho criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/CustomerNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Sales]
+      operationId: listSales
+      summary: Lista vendas
+      description: Lista vendas paginadas, da mais recente para a mais antiga. O status é opcional.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          required: false
+          description: Filtra por DRAFT, CONFIRMED ou CANCELLED.
+          schema:
+            type: string
+            enum: [DRAFT, CONFIRMED, CANCELLED]
+      responses:
+        '200':
+          description: Página de vendas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}:
+    get:
+      tags: [Sales]
+      operationId: getSale
+      summary: Consulta uma venda
+      description: Devolve a venda com linhas, desconto e totais.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+      responses:
+        '200':
+          description: Venda encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}/lines:
+    post:
+      tags: [Sales]
+      operationId: addSaleLine
+      summary: Adiciona uma linha
+      description: >
+        Inclui um produto ativo no rascunho. O nome e o preço atuais do produto são gravados como snapshot em BRL.
+        O número da linha é o maior existente mais um.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSaleLineRequest'
+      responses:
+        '200':
+          description: Venda com a nova linha
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Venda ou produto não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}/lines/{lineNumber}:
+    patch:
+      tags: [Sales]
+      operationId: changeSaleLineQuantity
+      summary: Altera a quantidade de uma linha
+      description: Altera só a quantidade de uma linha do rascunho. O preço gravado não muda.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+        - $ref: '#/components/parameters/LineNumber'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeSaleLineQuantityRequest'
+      responses:
+        '200':
+          description: Venda com a quantidade atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Sales]
+      operationId: removeSaleLine
+      summary: Remove uma linha
+      description: Remove a linha do rascunho. O número das outras linhas não muda.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+        - $ref: '#/components/parameters/LineNumber'
+      responses:
+        '200':
+          description: Venda sem a linha removida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}/discount:
+    put:
+      tags: [Sales]
+      operationId: applySaleDiscount
+      summary: Aplica o desconto
+      description: Substitui o desconto do rascunho. O valor não pode passar do subtotal e a moeda precisa ser a da venda.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplySaleDiscountRequest'
+      responses:
+        '200':
+          description: Venda com o desconto aplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}/confirm:
+    post:
+      tags: [Sales]
+      operationId: confirmSale
+      summary: Confirma a venda
+      description: Confirma um rascunho com pelo menos uma linha. A data de confirmação é definida no servidor.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+      responses:
+        '200':
+          description: Venda confirmada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/sales/{id}/cancel:
+    post:
+      tags: [Sales]
+      operationId: cancelSale
+      summary: Cancela a venda
+      description: Cancela um rascunho ou uma venda confirmada. A venda cancelada permanece no histórico.
+      parameters:
+        - $ref: '#/components/parameters/SaleId'
+      responses:
+        '200':
+          description: Venda cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/SaleNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
 components:
   parameters:
     Page:
@@ -295,6 +527,22 @@ components:
       schema:
         type: string
         format: uuid
+    SaleId:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID da venda.
+      schema:
+        type: string
+        format: uuid
+    LineNumber:
+      name: lineNumber
+      in: path
+      required: true
+      description: Número da linha. Não é reordenado quando outra linha é removida.
+      schema:
+        type: integer
+        minimum: 1
 
   responses:
     BadRequest:
@@ -345,6 +593,18 @@ components:
             error: Not Found
             message: Customer with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found
             path: /api/v1/customers/3fa85f64-5717-4562-b3fc-2c963f66afa6
+    SaleNotFound:
+      description: Venda não encontrada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            timestamp: '2026-11-02T19:00:00Z'
+            status: 404
+            error: Not Found
+            message: Sale with ID 3fa85f64-5717-4562-b3fc-2c963f66afa6 not found
+            path: /api/v1/sales/3fa85f64-5717-4562-b3fc-2c963f66afa6
     InternalError:
       description: Falha inesperada ao processar a requisição.
       content:
@@ -554,6 +814,136 @@ components:
           type: integer
           format: int64
           description: Total de clientes cadastrados.
+        totalPages:
+          type: integer
+          description: Total de páginas.
+        first:
+          type: boolean
+          description: Indica se esta é a primeira página.
+        last:
+          type: boolean
+          description: Indica se esta é a última página.
+    CreateSaleRequest:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Cliente existente e ativo da venda.
+    AddSaleLineRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+          format: uuid
+          description: Produto ativo. O nome e o preço atuais são copiados para a linha.
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantidade vendida.
+    ChangeSaleLineQuantityRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          description: Nova quantidade da linha.
+    ApplySaleDiscountRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          description: Valor do desconto. Não pode ser maior que o subtotal.
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Moeda ISO 4217. Precisa ser a mesma das linhas.
+    MoneyResponse:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+          description: Valor monetário.
+        currency:
+          type: string
+          description: Código ISO 4217.
+    SaleLineResponse:
+      type: object
+      required: [lineNumber, productId, productNameSnapshot, quantity, unitPrice]
+      properties:
+        lineNumber:
+          type: integer
+          description: Número estável da linha.
+        productId:
+          type: string
+          format: uuid
+          description: Produto de origem do snapshot.
+        productNameSnapshot:
+          type: string
+          description: Nome do produto no momento em que a linha foi incluída.
+        quantity:
+          type: integer
+          description: Quantidade da linha.
+        unitPrice:
+          $ref: '#/components/schemas/MoneyResponse'
+    SaleResponse:
+      type: object
+      required: [id, customerId, status, lines, subtotal, discount, total]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador da venda.
+        customerId:
+          type: string
+          format: uuid
+          description: Cliente da venda.
+        status:
+          type: string
+          enum: [DRAFT, CONFIRMED, CANCELLED]
+          description: Situação da venda.
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleLineResponse'
+        subtotal:
+          $ref: '#/components/schemas/MoneyResponse'
+        discount:
+          $ref: '#/components/schemas/MoneyResponse'
+        total:
+          $ref: '#/components/schemas/MoneyResponse'
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Instante da confirmação. Ausente enquanto a venda é rascunho.
+    SalePage:
+      type: object
+      required: [content, page, size, totalElements, totalPages, first, last]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleResponse'
+        page:
+          type: integer
+          description: Página retornada.
+        size:
+          type: integer
+          description: Tamanho pedido da página.
+        totalElements:
+          type: integer
+          format: int64
+          description: Total de vendas que atendem ao filtro.
         totalPages:
           type: integer
           description: Total de páginas.

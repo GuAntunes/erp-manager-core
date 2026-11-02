@@ -4,6 +4,7 @@ import br.com.gammacode.erpmanagercore.domain.model.customer.Customer
 import br.com.gammacode.erpmanagercore.domain.model.customer.CustomerId
 import br.com.gammacode.erpmanagercore.domain.port.out.CustomerRepository
 import br.com.gammacode.erpmanagercore.infrastructure.adapter.out.persistence.entity.CustomerEntity
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Component
@@ -32,6 +33,10 @@ class CustomerRepositoryAdapter(
 	override fun count(): Long = dataRepository.count()
 
 	override fun deleteById(id: CustomerId) {
-		dataRepository.deleteById(id.value)
+		try {
+			dataRepository.deleteById(id.value)
+		} catch (ex: DataIntegrityViolationException) {
+			throw IllegalStateException("Customer cannot be deleted because it has sales", ex)
+		}
 	}
 }

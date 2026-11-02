@@ -2,6 +2,7 @@ package br.com.gammacode.erpmanagercore.infrastructure.adapter.`in`.rest.excepti
 
 import br.com.gammacode.erpmanagercore.domain.model.customer.CustomerNotFoundException
 import br.com.gammacode.erpmanagercore.domain.model.product.ProductNotFoundException
+import br.com.gammacode.erpmanagercore.domain.model.sales.SaleNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -13,7 +14,11 @@ import java.time.Instant
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-	@ExceptionHandler(ProductNotFoundException::class, CustomerNotFoundException::class)
+	@ExceptionHandler(
+		ProductNotFoundException::class,
+		CustomerNotFoundException::class,
+		SaleNotFoundException::class
+	)
 	fun handleNotFound(ex: RuntimeException, request: WebRequest): ResponseEntity<ErrorResponse> =
 		error(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found", request)
 
