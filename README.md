@@ -1,0 +1,1 @@
+# erp-manager-core
