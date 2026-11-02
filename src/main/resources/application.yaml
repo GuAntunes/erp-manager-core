@@ -2,9 +2,9 @@ spring:
   application:
     name: erp-manager-core
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:erpmanager}
-    username: ${DB_USERNAME:erp}
-    password: ${DB_PASSWORD:erp}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:erp_manager_core}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     hikari:
       initialization-fail-timeout: 60000
   flyway:

@@ -2,32 +2,18 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: erpmanager
-      POSTGRES_USER: erp
-      POSTGRES_PASSWORD: erp
+      POSTGRES_DB: erp_manager_core
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - erpmanager-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d erpmanager"]
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp_manager_core"]
       interval: 5s
       timeout: 5s
       retries: 10
-
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: erpmanager
-      DB_USERNAME: erp
-      DB_PASSWORD: erp
-    depends_on:
-      postgres:
-        condition: service_healthy
 
 volumes:
   erpmanager-data:
